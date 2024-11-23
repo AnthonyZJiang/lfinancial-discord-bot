@@ -10,7 +10,7 @@ from config import load_config, save_config
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-VERSION: Final[str] = 'MK-I-0.1.2'
+VERSION: Final[str] = 'MK-I-0.1.2a'
 
 
 class MyClient(discord.Client):
@@ -43,7 +43,7 @@ class MyClient(discord.Client):
             return
         if message.channel.id not in self.channels_to_relay.keys():
             return
-        await self.target_channel.send(f'{message.author.name}: \n{message.content}')
+        await self.target_channel.send(f'{message.author.display_name}: \n{message.content}')
         for attachment in message.attachments:
             await self.target_channel.send(attachment.url)
 
