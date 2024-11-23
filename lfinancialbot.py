@@ -80,8 +80,8 @@ if __name__ == '__main__':
         """显示当前转播频道和目标频道"""
         if not await client.check_admin(interaction):
             return
-        msg = f'已设置转播频道: \n{"\n".join([f"{c.name}" for k, c in client.channels_to_relay.items()]) if len(client.channels_to_relay) else "无"}'
-        msg += f'\n\n已设置转播目标频道: \n{f"{client.target_channel.name}" if client.target_channel else "无"}'
+        msg = f'已设置转播频道: \n{"\n".join([f"{c.guild.name} : {c.name}" for k, c in client.channels_to_relay.items()]) if len(client.channels_to_relay) else "无"}'
+        msg += f'\n\n已设置转播目标频道: \n{f"{client.target_channel.guild.name} : {client.target_channel.name}" if client.target_channel else "无"}'
         msg += f'\n\n机器人版本: {VERSION}'
         await interaction.response.send_message(msg)
 
