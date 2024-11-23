@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from typing import Final
+from typing import Final, Union
 import os
 
 import discord
@@ -10,7 +10,7 @@ from config import load_config, save_config
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-VERSION: Final[str] = 'MK-I-0.1.1'
+VERSION: Final[str] = 'MK-I-0.1.2'
 
 
 class MyClient(discord.Client):
@@ -55,13 +55,41 @@ class MyClient(discord.Client):
             self.tree.copy_global_to(guild=guild)
             await self.tree.sync(guild=guild)
 
-
     async def check_admin(self, interaction: discord.Interaction):
         if not interaction.user.id in self.config['admin_ids']:
             await interaction.response.send_message('你没有权限使用此命令。')
             return False
         return True
-
+    
+    def set_relay_target(self, channel: discord.TextChannel) -> str:
+        if channel == self.target_channel:
+            return f'【{channel.guild.name}/{channel.name}】频道已经是转播目标频道。'
+        self.target_channel = channel
+        self.config['target_channel'] = self.target_channel.id
+        self.save_config()
+        return f'消息将会转播到【{channel.name}】频道。'
+    
+    def remove_relay_target(self) -> str:
+        self.target_channel = None
+        self.config['target_channel'] = 0
+        self.save_config()
+        return '已停止转播消息。'
+    
+    def set_relay_source(self, channel: discord.TextChannel) -> str:
+        if channel.id in self.channels_to_relay.keys():
+            return f'【{channel.guild.name}/{channel.name}】频道已经在转播列表中。'
+        self.channels_to_relay[channel.id] = channel
+        self.config['channels_to_relay'].append(channel.id)
+        self.save_config()
+        return f'开始转播【{channel.guild.name}/{channel.name}】频道的消息。'
+    
+    def remove_relay_source(self, channel: discord.TextChannel) -> str:
+        if channel.id not in self.channels_to_relay:
+            return f'【{channel.guild.name}/{channel.name}】频道不在转播列表中。'
+        self.channels_to_relay.pop(channel.id)
+        self.config['channels_to_relay'].remove(channel.id)
+        self.save_config()
+        return f'停止转播【{channel.guild.name}/{channel.name}】频道的消息。'
 
 if __name__ == '__main__':
     intents = discord.Intents.default()
@@ -76,7 +104,7 @@ if __name__ == '__main__':
 
 
     @client.tree.command()
-    async def relay_info(interaction: discord.Interaction):
+    async def relay_status(interaction: discord.Interaction):
         """显示当前转播频道和目标频道"""
         if not await client.check_admin(interaction):
             return
@@ -97,6 +125,31 @@ if __name__ == '__main__':
         client.config['target_channel'] = 0
         await interaction.response.send_message('已重置转播设置。')
         client.save_config()
+        
+    
+    @client.tree.command()
+    @app_commands.describe(direction='"from"转播该频道, "to"将消息转播到该转播。')
+    @app_commands.describe(channel_id='频道ID')
+    @app_commands.describe(enable='是否启用转播 y/n')
+    async def relay(interaction: discord.Interaction, direction: str, channel_id: str, enable: str):
+        """设置转播频道"""
+        if not await client.check_admin(interaction):
+            return
+        channel = client.get_channel(int(channel_id))
+        if channel is None:
+            await interaction.response.send_message('频道不存在。')
+            return
+        if direction.lower() == 'from':
+            if enable.lower() == 'y':
+                msg = client.set_relay_source(channel)
+            elif enable.lower() == 'n':
+                msg = client.remove_relay_source(channel)
+        elif direction.lower() == 'to':
+            if enable.lower() == 'y':
+                msg = client.set_relay_target(channel)
+            elif enable.lower() == 'n':
+                msg = client.remove_relay_target()
+        await interaction.response.send_message(msg)
 
 
     @client.tree.command()
@@ -106,23 +159,12 @@ if __name__ == '__main__':
         if not await client.check_admin(interaction):
             return
         if y_or_n.lower() == 'y':
-            if interaction.channel_id in client.channels_to_relay.keys():
-                await interaction.response.send_message('当前频道已经在转播列表中。')
-                return
-            client.channels_to_relay[interaction.channel_id] = interaction.channel
-            client.config['channels_to_relay'].append(interaction.channel_id)
-            await interaction.response.send_message('小人物金融机器人开始转播当前频道的消息。')
+            msg = client.set_relay_source(interaction.channel)
         elif y_or_n.lower() == 'n':
-            if interaction.channel_id not in client.channels_to_relay:
-                await interaction.response.send_message('当前频道不在转播列表中。')
-                return
-            client.channels_to_relay.pop(interaction.channel_id)
-            client.config['channels_to_relay'].remove(interaction.channel_id)
-            await interaction.response.send_message('小人物金融机器人停止转播当前频道的消息。')
+            msg = client.remove_relay_source(interaction.channel)
         else:
-            await interaction.response.send_message('输入错误，请输入"y"或"n"。')
-            return
-        client.save_config()
+            msg = '输入错误，请输入"y"或"n"。'
+        await interaction.response.send_message(msg)
 
 
     @client.tree.command()
@@ -132,19 +174,11 @@ if __name__ == '__main__':
         if not await client.check_admin(interaction):
             return
         if y_or_n.lower() == 'y':
-            if interaction.channel == client.target_channel:
-                await interaction.response.send_message('当前频道已经是转播目标频道。')
-                return
-            client.target_channel = interaction.channel
-            client.config['target_channel'] = client.target_channel.id
-            await interaction.response.send_message('小人物金融机器人将会把消息转播到当前频道。')
+            msg = client.set_relay_target(interaction.channel)
         elif y_or_n.lower() == 'n':
-            client.target_channel = None
-            client.config['target_channel'] = 0
-            await interaction.response.send_message('小人物金融机器人已停止转播消息。')
+            msg = client.remove_relay_target()
         else:
-            await interaction.response.send_message('输入错误，请输入"y"或"n"。')
-            return
-        client.save_config()
+            msg = '输入错误，请输入"y"或"n"。'
+        await interaction.response.send_message(msg)
 
     client.run(TOKEN)
