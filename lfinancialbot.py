@@ -9,11 +9,13 @@ from config import load_config, save_config
 
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
-TEST_FLAG: Final[bool] = os.getenv('TEST_FLAG') == '1'
+
+VERSION: Final[str] = 'MK-I-0.1.1'
 
 
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
+        self.config = load_config()
         self.channels_to_relay: dict[int, channel.TextChannel] = {}
         self.target_channel: channel.TextChannel = None
         super().__init__(intents=intents)
@@ -22,8 +24,9 @@ class MyClient(discord.Client):
     def save_config(self):
         save_config(self.config)
 
-    def load_config(self):
-        self.config = load_config()
+    def initialise(self):
+        if "admin_ids" not in self.config:
+            self.config["admin_ids"] = []
         for channel_id in self.config['channels_to_relay']:
             self.channels_to_relay[channel_id] = self.get_channel(channel_id)
         self.target_channel = self.get_channel(
@@ -40,16 +43,17 @@ class MyClient(discord.Client):
             return
         if message.channel.id not in self.channels_to_relay.keys():
             return
-        await self.target_channel.send(f'{message.author.name}: {message.content}')
+        await self.target_channel.send(f'{message.author.name}: \n{message.content}')
         for attachment in message.attachments:
             await self.target_channel.send(attachment.url)
 
     async def setup_hook(self):
-        if not TEST_FLAG:
+        if not self.config['test_mode']:
             return
-        test_guild = discord.Object(id=int(os.getenv('TEST_GUILD_ID')))
-        self.tree.copy_global_to(guild=test_guild)
-        await self.tree.sync(guild=test_guild)
+        for guild_id in self.config['test_guild_ids']:
+            guild = discord.Object(id=guild_id)
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
 
 
     async def check_admin(self, interaction: discord.Interaction):
@@ -66,7 +70,7 @@ if __name__ == '__main__':
 
     @client.event
     async def on_ready():
-        client.load_config()
+        client.initialise()
         print(f'Logged in as {client.user} (ID: {client.user.id})')
         print('------')
 
@@ -76,8 +80,9 @@ if __name__ == '__main__':
         """显示当前转播频道和目标频道"""
         if not await client.check_admin(interaction):
             return
-        msg = f'已设置转播频道: \n{"\n".join([f"{c.guild.name} - {c.name}" for k, c in client.channels_to_relay.items()]) if len(client.channels_to_relay) else "无"}'
-        msg += f'\n\n已设置转播目标频道: \n{f"{client.target_channel.guild.name} - {client.target_channel.name}" if client.target_channel else "无"}'
+        msg = f'已设置转播频道: \n{"\n".join([f"{c.name}" for k, c in client.channels_to_relay.items()]) if len(client.channels_to_relay) else "无"}'
+        msg += f'\n\n已设置转播目标频道: \n{f"{client.target_channel.name}" if client.target_channel else "无"}'
+        msg += f'\n\n机器人版本: {VERSION}'
         await interaction.response.send_message(msg)
 
 
