@@ -10,7 +10,7 @@ from config import load_config, save_config
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-VERSION: Final[str] = 'MK-I-0.1.2a'
+VERSION: Final[str] = 'MK-I-0.1.3'
 
 
 class MyClient(discord.Client):
