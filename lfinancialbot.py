@@ -43,7 +43,7 @@ class MyClient(discord.Client):
             return
         if message.channel.id not in self.channels_to_relay.keys():
             return
-        await self.target_channel.send(f'{message.author.display_name}: \n{message.content}')
+        await self.target_channel.send(f'**{message.author.display_name}:** \n{message.content}')
         for attachment in message.attachments:
             await self.target_channel.send(attachment.url)
 
@@ -108,12 +108,18 @@ if __name__ == '__main__':
         """显示当前转播频道和目标频道"""
         if not await client.check_admin(interaction):
             return
-        msg = f'已设置转播频道: \n{"\n".join([f"{c.guild.name} : {c.name}" for k, c in client.channels_to_relay.items()]) if len(client.channels_to_relay) else "无"}'
-        msg += f'\n\n已设置转播目标频道: \n{f"{client.target_channel.guild.name} : {client.target_channel.name}" if client.target_channel else "无"}'
-        msg += f'\n\n机器人版本: {VERSION}'
-        await interaction.response.send_message(msg)
+        msg = f'''```ansi
+正在将
+[2;31m{"\n".join([f"{c.guild.name} : {c.name}" for k, c in client.channels_to_relay.items()]) if len(client.channels_to_relay) else "无"}[0m
 
+转播到
+[2;33m{f"{client.target_channel.guild.name} : {client.target_channel.name}" if client.target_channel else "无"}[0m
 
+[2;30m机器人版本: {VERSION}[0m
+```
+        '''
+        await interaction.response.send_message(msg, ephemeral=True)
+        
     @client.tree.command()
     async def reset_relay(interaction: discord.Interaction):
         """重置转播设置"""
@@ -123,7 +129,7 @@ if __name__ == '__main__':
         client.target_channel = None
         client.config['channels_to_relay'] = []
         client.config['target_channel'] = 0
-        await interaction.response.send_message('已重置转播设置。')
+        await interaction.response.send_message('已重置转播设置。', ephemeral=True)
         client.save_config()
         
     
@@ -149,7 +155,7 @@ if __name__ == '__main__':
                 msg = client.set_relay_target(channel)
             elif enable.lower() == 'n':
                 msg = client.remove_relay_target()
-        await interaction.response.send_message(msg)
+        await interaction.response.send_message(msg, ephemeral=True)
 
 
     @client.tree.command()
@@ -164,7 +170,7 @@ if __name__ == '__main__':
             msg = client.remove_relay_source(interaction.channel)
         else:
             msg = '输入错误，请输入"y"或"n"。'
-        await interaction.response.send_message(msg)
+        await interaction.response.send_message(msg, ephemeral=True)
 
 
     @client.tree.command()
@@ -179,6 +185,6 @@ if __name__ == '__main__':
             msg = client.remove_relay_target()
         else:
             msg = '输入错误，请输入"y"或"n"。'
-        await interaction.response.send_message(msg)
+        await interaction.response.send_message(msg, ephemeral=True)
 
     client.run(TOKEN)
