@@ -51,10 +51,10 @@ class MyClient(discord.Client):
     async def setup_hook(self):
         if not self.config['test_mode']:
             return
-        for guild_id in self.config['test_guild_ids']:
-            guild = discord.Object(id=guild_id)
-            self.tree.copy_global_to(guild=guild)
-            await self.tree.sync(guild=guild)
+        guild_id = self.config['test_guild_ids'][0]
+        guild = discord.Object(id=guild_id)
+        self.tree.copy_global_to(guild=guild)
+        await self.tree.sync(guild=guild)
 
     async def check_admin(self, interaction: discord.Interaction):
         if not interaction.user.id in self.config['admin_ids']:
@@ -106,6 +106,7 @@ if __name__ == '__main__':
 
 
     @client.tree.command()
+    @app_commands.default_permissions(manage_roles=True)
     async def relay_status(interaction: discord.Interaction):
         """显示当前转播频道和目标频道"""
         if not await client.check_admin(interaction):
@@ -123,6 +124,7 @@ if __name__ == '__main__':
         await interaction.response.send_message(msg, ephemeral=True)
         
     @client.tree.command()
+    @app_commands.default_permissions(manage_roles=True)
     async def reset_relay(interaction: discord.Interaction):
         """重置转播设置"""
         if not await client.check_admin(interaction):
@@ -136,6 +138,7 @@ if __name__ == '__main__':
         
     
     @client.tree.command()
+    @app_commands.default_permissions(manage_roles=True)
     @app_commands.describe(direction='"from"转播该频道, "to"将消息转播到该转播。')
     @app_commands.describe(channel_id='频道ID')
     @app_commands.describe(enable='是否启用转播 y/n')
@@ -161,6 +164,7 @@ if __name__ == '__main__':
 
 
     @client.tree.command()
+    @app_commands.default_permissions(manage_roles=True)
     @app_commands.describe(y_or_n='输入"y"开始转播当前频道, 输入"n"结束转播。')
     async def relay_this(interaction: discord.Interaction, y_or_n: str):
         """设置当前频道是否转播"""
@@ -176,6 +180,7 @@ if __name__ == '__main__':
 
 
     @client.tree.command()
+    @app_commands.default_permissions(manage_roles=True)
     @app_commands.describe(y_or_n='输入"y"将消息转播到当前频道, 输入"n"结束转播。')
     async def relay_to(interaction: discord.Interaction, y_or_n: str):
         """设置是否转播消息到当前频道"""
@@ -193,7 +198,7 @@ if __name__ == '__main__':
     @client.tree.command()
     @app_commands.describe(sym='代码')
     async def last(interaction: discord.Interaction, sym: str):
-        """查询股票"""
+        """查询股票最新价格"""
         last_price = ft.get_stock_last_price(sym)
         if last_price is None:
             await interaction.response.send_message(f'${sym} - 没有找到数据。')
@@ -204,7 +209,7 @@ if __name__ == '__main__':
     @client.tree.command()
     @app_commands.describe(sym='代码')
     async def chart_5m(interaction: discord.Interaction, sym: str):
-        """查询股票"""
+        """获取股票5分钟蜡烛图"""
         filename, last_price = ft.get_stock_intraday_chart(sym)
         if filename is None:
             await interaction.response.send_message(f'${sym} - 没有找到数据。')
