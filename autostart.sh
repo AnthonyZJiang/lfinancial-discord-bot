@@ -1,3 +1,5 @@
+git pull
+
 venv=.venv/bin/
 
 if [[ -d "${venv}" && ! -L "${venv}" ]]; then
