@@ -8,5 +8,5 @@ else
 	echo "venv not found."
 fi
 
-pip install -r requirements.txt
+pip install -U -r requirements.txt
 python3 lfinancialbot.py

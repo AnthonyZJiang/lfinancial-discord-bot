@@ -10,5 +10,5 @@ multidict==6.1.0
 propcache==0.2.0
 python-dotenv==1.0.1
 yarl==1.18.0
-yfinance==0.2.50
+yfinance
 mplfinance==0.12.10b0
