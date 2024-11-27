@@ -4,5 +4,7 @@ config.json
 .venv/
 .vscode/
 
+generated_*.png
+test_*
 *.pyc
 __pycache__/

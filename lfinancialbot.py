@@ -6,6 +6,7 @@ import discord
 from discord import app_commands, channel
 
 from config import load_config, save_config
+from tools import FinanceToolkit as Ft
 
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
@@ -92,6 +93,7 @@ class MyClient(discord.Client):
         return f'停止转播【{channel.guild.name}/{channel.name}】频道的消息。'
 
 if __name__ == '__main__':
+    ft = Ft()
     intents = discord.Intents.default()
     intents.message_content = True
     client = MyClient(intents=intents)
@@ -186,5 +188,29 @@ if __name__ == '__main__':
         else:
             msg = '输入错误，请输入"y"或"n"。'
         await interaction.response.send_message(msg, ephemeral=True)
+
+
+    @client.tree.command()
+    @app_commands.describe(sym='代码')
+    async def last(interaction: discord.Interaction, sym: str):
+        """查询股票"""
+        last_price = ft.get_stock_last_price(sym)
+        if last_price is None:
+            await interaction.response.send_message(f'${sym} - 没有找到数据。')
+            return
+        await interaction.response.send_message(f'**${sym.upper()}** {last_price:.2f}')
+
+
+    @client.tree.command()
+    @app_commands.describe(sym='代码')
+    async def chart_5m(interaction: discord.Interaction, sym: str):
+        """查询股票"""
+        filename, last_price = ft.get_stock_intraday_chart(sym)
+        if filename is None:
+            await interaction.response.send_message(f'${sym} - 没有找到数据。')
+            return
+        await interaction.response.send_message(f'**${sym.upper()}** {last_price:.2f}', file=discord.File(filename))
+        os.remove(filename)
+        
 
     client.run(TOKEN)
