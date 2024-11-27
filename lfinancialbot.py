@@ -12,7 +12,7 @@ from logging import getLogger
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-VERSION: Final[str] = 'MK-I-0.1.3'
+VERSION: Final[str] = 'MK-I-0.2.0'
 
 
 class MyClient(discord.Client):
