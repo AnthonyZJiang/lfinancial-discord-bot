@@ -7,6 +7,7 @@ from discord import app_commands, channel
 
 from config import load_config, save_config
 from tools import FinanceToolkit as Ft
+from logging import getLogger
 
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
@@ -97,6 +98,7 @@ if __name__ == '__main__':
     intents = discord.Intents.default()
     intents.message_content = True
     client = MyClient(intents=intents)
+    logger = getLogger('lfbot')
 
     @client.event
     async def on_ready():
@@ -108,6 +110,7 @@ if __name__ == '__main__':
     @client.tree.command()
     @app_commands.default_permissions(manage_roles=True)
     async def relay_status(interaction: discord.Interaction):
+        logger.info(f'{interaction.user.display_name} used "relay_status" command')
         """显示当前转播频道和目标频道"""
         if not await client.check_admin(interaction):
             return
@@ -127,6 +130,7 @@ if __name__ == '__main__':
     @app_commands.default_permissions(manage_roles=True)
     async def reset_relay(interaction: discord.Interaction):
         """重置转播设置"""
+        logger.info(f'{interaction.user.display_name} used "reset_relay" command')
         if not await client.check_admin(interaction):
             return
         client.channels_to_relay.clear()
@@ -144,6 +148,7 @@ if __name__ == '__main__':
     @app_commands.describe(enable='是否启用转播 y/n')
     async def relay(interaction: discord.Interaction, direction: str, channel_id: str, enable: str):
         """设置转播频道"""
+        logger.info(f'{interaction.user.display_name} used "relay" command')
         if not await client.check_admin(interaction):
             return
         channel = client.get_channel(int(channel_id))
@@ -168,6 +173,7 @@ if __name__ == '__main__':
     @app_commands.describe(y_or_n='输入"y"开始转播当前频道, 输入"n"结束转播。')
     async def relay_this(interaction: discord.Interaction, y_or_n: str):
         """设置当前频道是否转播"""
+        logger.info(f'{interaction.user.display_name} used "relay_this" command')
         if not await client.check_admin(interaction):
             return
         if y_or_n.lower() == 'y':
@@ -184,6 +190,7 @@ if __name__ == '__main__':
     @app_commands.describe(y_or_n='输入"y"将消息转播到当前频道, 输入"n"结束转播。')
     async def relay_to(interaction: discord.Interaction, y_or_n: str):
         """设置是否转播消息到当前频道"""
+        logger.info(f'{interaction.user.display_name} used "relay_to" command')
         if not await client.check_admin(interaction):
             return
         if y_or_n.lower() == 'y':
@@ -199,9 +206,10 @@ if __name__ == '__main__':
     @app_commands.describe(sym='代码')
     async def last(interaction: discord.Interaction, sym: str):
         """查询股票最新价格"""
+        logger.info(f'{interaction.user.display_name} used "last" command for {sym}')
         last_price = ft.get_stock_last_price(sym)
         if last_price is None:
-            await interaction.response.send_message(f'${sym} - 没有找到数据。')
+            await interaction.response.send_message(f'${sym.upper()} - 没有找到数据。')
             return
         await interaction.response.send_message(f'**${sym.upper()}** {last_price:.2f}')
 
@@ -210,9 +218,10 @@ if __name__ == '__main__':
     @app_commands.describe(sym='代码')
     async def chart_5m(interaction: discord.Interaction, sym: str):
         """获取股票5分钟蜡烛图"""
+        logger.info(f'{interaction.user.display_name} used "chart_5m" command for {sym}')
         filename, last_price = ft.get_stock_intraday_chart(sym)
         if filename is None:
-            await interaction.response.send_message(f'${sym} - 没有找到数据。')
+            await interaction.response.send_message(f'${sym.upper()} - 没有找到数据。')
             return
         await interaction.response.send_message(f'**${sym.upper()}** {last_price:.2f}', file=discord.File(filename))
         os.remove(filename)
