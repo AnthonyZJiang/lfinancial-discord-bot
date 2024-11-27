@@ -216,6 +216,18 @@ if __name__ == '__main__':
 
     @client.tree.command()
     @app_commands.describe(sym='代码')
+    async def hlast(interaction: discord.Interaction, sym: str):
+        """查询股票最新价格 仅自己可见"""
+        logger.info(f'{interaction.user.display_name} used "last" command for {sym}')
+        last_price = ft.get_stock_last_price(sym)
+        if last_price is None:
+            await interaction.response.send_message(f'${sym.upper()} - 没有找到数据。', ephemeral=True)
+            return
+        await interaction.response.send_message(f'**${sym.upper()}** {last_price:.2f}', ephemeral=True)
+
+
+    @client.tree.command()
+    @app_commands.describe(sym='代码')
     async def chart_5m(interaction: discord.Interaction, sym: str):
         """获取股票5分钟蜡烛图"""
         logger.info(f'{interaction.user.display_name} used "chart_5m" command for {sym}')
@@ -224,6 +236,19 @@ if __name__ == '__main__':
             await interaction.response.send_message(f'${sym.upper()} - 没有找到数据。')
             return
         await interaction.response.send_message(f'**${sym.upper()}** {last_price:.2f}', file=discord.File(filename))
+        os.remove(filename)
+        
+        
+    @client.tree.command()
+    @app_commands.describe(sym='代码')
+    async def hchart_5m(interaction: discord.Interaction, sym: str):
+        """获取股票5分钟蜡烛图 仅自己可见"""
+        logger.info(f'{interaction.user.display_name} used "chart_5m" command for {sym}')
+        filename, last_price = ft.get_stock_intraday_chart(sym)
+        if filename is None:
+            await interaction.response.send_message(f'${sym.upper()} - 没有找到数据。', ephemeral=True)
+            return
+        await interaction.response.send_message(f'**${sym.upper()}** {last_price:.2f}', file=discord.File(filename), ephemeral=True)
         os.remove(filename)
         
 
